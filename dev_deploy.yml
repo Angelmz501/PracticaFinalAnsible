@@ -1,0 +1,61 @@
+---
+- name: Deploy Apache HTTPD configuration
+  hosts: servidores
+  become: true
+
+  vars:
+    vhost_path: "/var/www/vhosts/{{ ansible_hostname }}"
+
+  tasks:
+    - name: Instalar el paquete httpd
+      ansible.builtin.yum:
+        name: httpd
+        state: present
+
+    - name: Iniciar y habilitar el servicio httpd
+      ansible.builtin.service:
+        name: httpd
+        state: started
+        enabled: yes
+
+    - name: Desplegar plantilla vhost.conf
+      ansible.builtin.template:
+        src: templates/vhost.conf.j2
+        dest: /etc/httpd/conf.d/vhost.conf
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart httpd
+
+    - name: Crear directorio del vhost si no existe
+      ansible.builtin.file:
+        path: "{{ vhost_path }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Copiar index.html al vhost
+      ansible.builtin.copy:
+        src: files/index.html
+        dest: "{{ vhost_path }}/index.html"
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Permitir HTTP y HTTPS en el firewall
+      ansible.posix.firewalld:
+        service: "{{ item }}"
+        permanent: true
+        state: enabled
+        immediate: true
+      loop:
+        - http
+        - https
+
+  handlers:
+    - name: Restart httpd
+      ansible.builtin.service:
+        name: httpd
+        state: restarted
+
