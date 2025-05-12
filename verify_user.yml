@@ -1,24 +1,27 @@
 ---
-- name: Verify the carlos user was created
+- name: Verificar que los usuarios fueron creados
   hosts: servidores
+  become: true
+  gather_facts: yes
 
   tasks:
+    - name: Verificar si el usuario carlos existe
+      ansible.builtin.command: id carlos
+      register: carlos_user
+      ignore_errors: true
 
-    - name: Verify the carlos user exists
-      ansible.builtin.user:
-        name: carlos
-      check_mode: true
-      register: carlos_check
-
-    - name: Carlos was created
+    - name: Carlos fue creado
       ansible.builtin.debug:
-        msg: "Carlos was created"
-      when: carlos_check['changed'] == false
+        msg: "El usuario carlos existe"
+      when: carlos_user.rc == 0
 
-    - name: Output carlos user status to file
-      ansible.builtin.lineinfile:
-        path: /home/student/verify.txt
-        line: "Carlos was created"
-        create: true
-      when: carlos_check['changed'] == false
+    - name: Verificar si el usuario marta existe
+      ansible.builtin.command: id marta
+      register: marta_user
+      ignore_errors: true
+
+    - name: Marta fue creada
+      ansible.builtin.debug:
+        msg: "El usuario marta existe"
+      when: marta_user.rc == 0
 
